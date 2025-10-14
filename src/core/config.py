@@ -115,7 +115,8 @@ class ConfigManager:
     
     def get_html_report_config(self) -> Dict[str, Any]:
         """获取HTML报告配置"""
-        return self.get('report.html', {})
+        
+        return self.get('index.html', {})
     
     def get_text_report_config(self) -> Dict[str, Any]:
         """获取文本报告配置"""

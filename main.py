@@ -253,9 +253,9 @@ class TrendRadar:
             html_renderer = self.renderer_plugins.get('HTMLRenderer')
             logger.info(f"HTML 渲染器: {html_renderer}, 配置状态: {html_renderer._configured if html_renderer else 'None'}")
             if html_renderer and html_renderer._configured:
-                filename = self._generate_filename(html_config.get('filename', 'report.html'))
+                filename = self._generate_filename(html_config.get('filename', 'index.html'))
                 logger.info(f"生成 HTML 报告，文件名: {filename}")
-                html_content = html_renderer.render('report', context, filename)
+                html_content = html_renderer.render('index', context, filename)
                 reports['html'] = html_content
                 logger.info(f"HTML 报告生成完成: {filename}")
             else:
@@ -279,30 +279,48 @@ class TrendRadar:
         """准备报告上下文"""
         beijing_time = get_beijing_time()
         
-        # 按平台分类新标题列表，每个平台限制前10条
+        # 创建平台ID到平台名称的映射
+        platform_name_mapping = {}
+        platforms_config = self.config_manager.get_platforms()
+        for platform in platforms_config:
+            platform_name_mapping[platform['id']] = platform['name']
+        
+        # 按平台分类新标题列表，每个平台限制前5条显示，保持完整数据供弹窗使用
         new_titles_by_platform = {}
+        new_titles_full_data = {}  # 保存完整数据供弹窗使用
         for source_id, source_titles in report_data.new_titles.items():
             platform_titles = []
-            for title_data in source_titles[:10]:  # 每个平台限制前10条
-                # 转换为模板期望的格式
-                platform_titles.append({
+            full_platform_titles = []
+            
+            # 转换所有数据为模板期望的格式
+            for title_data in source_titles:
+                title_item = {
                     'text': title_data.title,
                     'url': title_data.url,
                     'source_name': title_data.source_name,
                     'time_info': title_data.time_display
-                })
+                }
+                full_platform_titles.append(title_item)
+                
+                # 只取前5条用于主页面显示
+                if len(platform_titles) < 5:
+                    platform_titles.append(title_item)
+            
             if platform_titles:  # 只添加有数据的平台
                 new_titles_by_platform[source_id] = platform_titles
+                new_titles_full_data[source_id] = full_platform_titles
         
         return {
-            'title': '趋势雷达分析报告',
+            'title': '时事订阅',
             'subtitle': '实时热点监控与关键词分析',
             'timestamp': beijing_time.strftime('%Y-%m-%d %H:%M:%S'),
             'version': self.config_manager.get_version(),
             'total_titles': report_data.get_total_titles(),
             'new_titles_count': report_data.total_new_count,
             'word_stats': report_data.stats[:20],  # 前20个
-            'new_titles_by_platform': new_titles_by_platform,  # 按平台分类的新标题
+            'new_titles_by_platform': new_titles_by_platform,  # 按平台分类的新标题（前5条）
+            'new_titles_full_data': new_titles_full_data,  # 完整数据供弹窗使用
+            'platform_name_mapping': platform_name_mapping,  # 平台ID到名称的映射
             'platforms': list(set(title.source_name for stat in report_data.stats for title in stat.titles))
         }
     

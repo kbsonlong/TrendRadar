@@ -50,10 +50,16 @@ platforms:
     url: "https://newsnow.busiyi.world/api/s?id=toutiao"
     enabled: true
 
-  - id: "zaobao"
-    name: "联合早报"
-    type: "zaobao"
-    url: "https://newsnow.busiyi.world/api/s?id=zaobao"
+  - id: "wallstreetcn-news"
+    name: "华尔街见闻 最新"
+    type: "wallstreetcn-news"
+    url: "https://newsnow.busiyi.world/api/s?id=wallstreetcn-news"
+    enabled: true
+
+  - id: "ifeng"
+    name: "凤凰新闻"
+    type: "ifeng"
+    url: "https://newsnow.busiyi.world/api/s?id=ifeng"
     enabled: true
 
 # 关键词配置
@@ -138,20 +144,20 @@ notifications:
     batch_size: 5
 
 # 报告配置
-report:
+index:
   # HTML 报告
   html:
     enabled: true
     template_dir: "src/templates/html"
     output_dir: "output/html"
-    filename: "trend_report_{{ timestamp }}.html"
+    filename: "index_{{ timestamp }}.html"
     
   # 文本报告
   text:
     enabled: true
     template_dir: "src/templates/text"
     output_dir: "output/text"
-    filename: "trend_report_{{ timestamp }}.md"
+    filename: "index_{{ timestamp }}.md"
 
 # 运行模式
 mode:
