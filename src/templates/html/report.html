@@ -160,6 +160,22 @@
             margin-bottom: 40px;
         }
         
+        .platform-section {
+            margin-bottom: 30px;
+        }
+        
+        .platform-title {
+            font-size: 1.2rem;
+            color: #495057;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 4px solid #667eea;
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        
         .new-titles-list {
             background: white;
             border: 1px solid #e9ecef;
@@ -231,21 +247,7 @@
             text-decoration: none;
         }
         
-        .word-name {
-            font-weight: 600;
-            color: #495057;
-            margin-bottom: 4px;
-        }
-        
-        .title-links {
-            margin-top: 4px;
-        }
-        
-        .more-titles {
-            color: #6c757d;
-            font-size: 0.8rem;
-            font-style: italic;
-        }
+
         
         .title-source {
             color: #6c757d;
@@ -364,19 +366,7 @@
                             {% for stat in word_stats %}
                             <tr>
                                 <td class="word-text">
-                                    <div class="word-name">{{ stat.word }}</div>
-                                    {% if stat.titles and stat.titles|length > 0 %}
-                                        <div class="title-links">
-                                            {% for title in stat.titles[:3] %}
-                                                {% if title.url %}
-                                                    <a href="{{ title.url }}" target="_blank" class="title-link-small">{{ title.title[:20] }}{% if title.title|length > 20 %}...{% endif %}</a>
-                                                {% endif %}
-                                            {% endfor %}
-                                            {% if stat.titles|length > 3 %}
-                                                <span class="more-titles">+{{ stat.titles|length - 3 }} 更多</span>
-                                            {% endif %}
-                                        </div>
-                                    {% endif %}
+                                    {{ stat.word }}
                                 </td>
                                 <td class="word-count">{{ stat.count }}</td>
                                 <td class="word-rank">
@@ -397,33 +387,38 @@
             </div>
             
             <!-- 新标题列表 -->
-            {% if new_titles %}
+            {% if new_titles_by_platform %}
             <div class="new-titles-section">
                 <h2 class="section-title">🆕 新发现标题</h2>
                 
-                <div class="new-titles-list">
-                    {% for title in new_titles %}
-                    <div class="new-title-item">
-                        <div>
-                            <span class="new-badge">NEW</span>
-                            {% if title.url %}
-                                <a href="{{ title.url }}" target="_blank" class="title-link">{{ title.text }}</a>
-                            {% else %}
-                                <span class="title-text">{{ title.text }}</span>
-                            {% endif %}
+                {% for platform_id, platform_titles in new_titles_by_platform.items() %}
+                <div class="platform-section">
+                    <h3 class="platform-title">{{ platform_titles[0].source_name if platform_titles else platform_id }}</h3>
+                    <div class="new-titles-list">
+                        {% for title in platform_titles %}
+                        <div class="new-title-item">
+                            <div>
+                                <span class="new-badge">NEW</span>
+                                {% if title.url %}
+                                    <a href="{{ title.url }}" target="_blank" class="title-link">{{ title.text }}</a>
+                                {% else %}
+                                    <span class="title-text">{{ title.text }}</span>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <span class="title-source">{{ title.source_name }}</span>
+                                <span class="title-time">{{ title.time_info }}</span>
+                            </div>
                         </div>
-                        <div>
-                            <span class="title-source">{{ title.source_name }}</span>
-                            <span class="title-time">{{ title.time_info }}</span>
-                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 </div>
+                {% endfor %}
             </div>
             {% endif %}
             
             <!-- 无数据提示 -->
-            {% if not word_stats and not new_titles %}
+            {% if not word_stats and not new_titles_by_platform %}
             <div class="no-data">
                 <p>暂无数据</p>
             </div>

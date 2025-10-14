@@ -178,9 +178,14 @@ class NewsNowFetcher(BaseFetcher):
         
         # 添加请求头
         headers = {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'User-Agent': 'TrendRadar/1.0.0',
+            'Referer': "https://newsnow.busiyi.world/",
+            'sec-ch-ua': '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
+            'sec-ch-ua-mobile': "?0",
+            'sec-ch-ua-platform': '"macOS"',
+            'sec-fetch-dest': "empty",
+            'sec-fetch-mode': "cors",
+            'sec-fetch-site': "same-origin",
+            'User-Agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
         }
         
         error_msg, response = self.make_request(

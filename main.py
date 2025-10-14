@@ -17,7 +17,7 @@ from src.core.data_models import PlatformConfig, ReportData
 from src.core.pipeline import AnalysisPipeline
 from src.core.utils import (
     get_beijing_time, format_time_ago, ensure_directory,
-    save_crawl_record, is_first_crawl_today
+    save_crawl_record, is_first_crawl_today, TitleHistoryManager
 )
 from src.plugins.plugin_loader import PluginLoader
 from src.plugins.fetchers.news_fetcher import NewsNowFetcher
@@ -41,6 +41,9 @@ class TrendRadar:
         self.fetcher_plugins = {}
         self.notifier_plugins = {}
         self.renderer_plugins = {}
+        
+        # 标题历史管理器
+        self.title_history_manager = TitleHistoryManager()
         
         # 设置日志
         self._setup_logging()
@@ -205,6 +208,11 @@ class TrendRadar:
         filter_words = self.config_manager.get_filter_words()
         rank_threshold = self.config_manager.get_rank_threshold()
         
+        # 识别新标题
+        logger.info("开始识别新标题...")
+        new_titles = self.title_history_manager.identify_new_titles(crawl_data)
+        logger.info(f"新标题识别完成，发现 {sum(len(titles) for titles in new_titles.values())} 个新标题")
+        
         # 执行分析
         stats, total_titles = self.analysis_pipeline.process_data(
             data_source=crawl_data,
@@ -216,7 +224,7 @@ class TrendRadar:
         # 准备报告数据
         report_data = self.analysis_pipeline.prepare_report_data(
             stats=stats,
-            new_titles={},
+            new_titles=new_titles,
             failed_ids=[],
             total_titles=total_titles,
             mode="daily"
@@ -271,6 +279,21 @@ class TrendRadar:
         """准备报告上下文"""
         beijing_time = get_beijing_time()
         
+        # 按平台分类新标题列表，每个平台限制前10条
+        new_titles_by_platform = {}
+        for source_id, source_titles in report_data.new_titles.items():
+            platform_titles = []
+            for title_data in source_titles[:10]:  # 每个平台限制前10条
+                # 转换为模板期望的格式
+                platform_titles.append({
+                    'text': title_data.title,
+                    'url': title_data.url,
+                    'source_name': title_data.source_name,
+                    'time_info': title_data.time_display
+                })
+            if platform_titles:  # 只添加有数据的平台
+                new_titles_by_platform[source_id] = platform_titles
+        
         return {
             'title': '趋势雷达分析报告',
             'subtitle': '实时热点监控与关键词分析',
@@ -279,7 +302,7 @@ class TrendRadar:
             'total_titles': report_data.get_total_titles(),
             'new_titles_count': report_data.total_new_count,
             'word_stats': report_data.stats[:20],  # 前20个
-            'new_titles': list(report_data.new_titles.values())[:20],  # 前20个
+            'new_titles_by_platform': new_titles_by_platform,  # 按平台分类的新标题
             'platforms': list(set(title.source_name for stat in report_data.stats for title in stat.titles))
         }
     
