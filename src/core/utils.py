@@ -5,9 +5,11 @@ import re
 import html
 import logging
 from datetime import datetime, timezone, timedelta
+import json
 from typing import Dict, Any, Optional, List
 import os
 import time
+from .data_models import TitleData
 
 logger = logging.getLogger(__name__)
 
@@ -267,3 +269,159 @@ class PushRecordManager:
 
 # 从 pathlib 导入 Path
 from pathlib import Path
+
+
+class TitleHistoryManager:
+    """标题历史管理器"""
+    
+    def __init__(self, history_dir: str = "output/history"):
+        self.history_dir = Path(history_dir)
+        self.history_dir.mkdir(parents=True, exist_ok=True)
+        self.logger = logging.getLogger(__name__)
+    
+    def get_history_file_path(self, date_str: str = None) -> Path:
+        """获取历史文件路径"""
+        if date_str is None:
+            date_str = get_beijing_time().strftime("%Y%m%d")
+        return self.history_dir / f"titles_{date_str}.json"
+    
+    def load_history_titles(self, date_str: str = None) -> Dict[str, List[str]]:
+        """加载历史标题数据"""
+        history_file = self.get_history_file_path(date_str)
+        
+        if not history_file.exists():
+            self.logger.info(f"历史文件不存在: {history_file}")
+            return {}
+        
+        try:
+            with open(history_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                self.logger.info(f"加载历史标题数据: {len(data)} 个平台")
+                return data
+        except Exception as e:
+            self.logger.error(f"加载历史标题失败: {e}")
+            return {}
+    
+    def save_history_titles(self, titles_data: Dict[str, List[str]], date_str: str = None):
+        """保存标题历史数据"""
+        history_file = self.get_history_file_path(date_str)
+        
+        try:
+            with open(history_file, 'w', encoding='utf-8') as f:
+                json.dump(titles_data, f, ensure_ascii=False, indent=2)
+            self.logger.info(f"保存历史标题数据: {history_file}")
+        except Exception as e:
+            self.logger.error(f"保存历史标题失败: {e}")
+    
+    def identify_new_titles(self, current_data: Dict[str, Any], 
+                           history_date: Optional[datetime] = None) -> Dict[str, List[Dict[str, Any]]]:
+        """识别新标题
+        
+        Args:
+            current_data: 当前爬取的数据
+            history_date: 历史日期（默认昨天）
+            
+        Returns:
+            新标题字典，格式为 {source_id: [TitleData, ...]}
+        """
+        if history_date is None:
+            history_date = datetime.now() - timedelta(days=1)
+            
+        self.logger.info(f"识别新标题，历史日期: {history_date}")
+        
+        # 将datetime转换为字符串格式用于文件路径
+        history_date_str = history_date.strftime("%Y%m%d")
+        
+        # 加载历史标题
+        historical_titles = self.load_history_titles(history_date_str)
+        self.logger.info(f"历史标题数量: {len(historical_titles)}")
+        
+        new_titles = {}
+        total_new_count = 0
+        
+        # 遍历当前数据
+        for source_id, items in current_data.items():
+            source_new_titles = []
+            
+            # 获取该平台的历史标题列表
+            platform_historical_titles = historical_titles.get(source_id, [])
+            self.logger.debug(f"平台 {source_id} 历史标题: {len(platform_historical_titles)} 个")
+            
+            # 处理字典格式数据: {title: title_info}
+            if isinstance(items, dict):
+                for title, title_info in items.items():
+                    # 检查是否是新标题
+                    if title not in platform_historical_titles:
+                        self.logger.debug(f"发现新标题: {title[:50]}...")
+                        
+                        # 获取标题信息
+                        if isinstance(title_info, dict):
+                            title_data = TitleData(
+                                title=title,
+                                source_name=title_info.get('source_name', source_id),
+                                url=title_info.get('url', ''),
+                                mobile_url=title_info.get('mobile_url', ''),
+                                time_display=title_info.get('time_info', ''),
+                                ranks=title_info.get('ranks', []),
+                                is_new=True
+                            )
+                        else:
+                            title_data = TitleData(
+                                title=title,
+                                source_name=source_id,
+                                is_new=True
+                            )
+                        
+                        source_new_titles.append(title_data)
+                        total_new_count += 1
+            
+            # 处理列表格式数据: [{title_data}, ...]
+            elif isinstance(items, list):
+                for item in items:
+                    if not isinstance(item, dict):
+                        continue
+                        
+                    title = item.get('title', '')
+                    if not title:
+                        continue
+                        
+                    # 检查是否是新标题
+                    if title not in platform_historical_titles:
+                        self.logger.debug(f"发现新标题: {title[:50]}...")
+                        title_data = TitleData(
+                            title=title,
+                            source_name=item.get('source_name', source_id),
+                            url=item.get('url', ''),
+                            mobile_url=item.get('mobile_url', ''),
+                            time_display=item.get('time_info', ''),
+                            is_new=True
+                        )
+                        source_new_titles.append(title_data)
+                        total_new_count += 1
+            
+            if source_new_titles:
+                new_titles[source_id] = source_new_titles
+                self.logger.info(f"平台 {source_id} 发现 {len(source_new_titles)} 个新标题")
+                
+        self.logger.info(f"新标题识别完成，总计: {total_new_count} 个")
+        return new_titles
+    
+    def extract_titles_for_history(self, data_source: Dict[str, Any]) -> Dict[str, List[str]]:
+        """从数据源中提取标题列表用于历史记录"""
+        history_data = {}
+        
+        for source_id, titles_info in data_source.items():
+            if isinstance(titles_info, dict):
+                # 只保存标题文本列表
+                history_data[source_id] = list(titles_info.keys())
+            elif isinstance(titles_info, list):
+                # 如果数据是列表格式，提取每个项目的标题
+                titles = []
+                for item in titles_info:
+                    if isinstance(item, dict) and 'title' in item:
+                        titles.append(item['title'])
+                    elif isinstance(item, str):
+                        titles.append(item)
+                history_data[source_id] = titles
+        
+        return history_data
