@@ -1,43 +1,78 @@
-# 配置文件示例
+# 数据抓取配置
 crawler:
   # 数据抓取配置
-  max_retries: 2
+  max_retries: 3
   timeout: 30
   batch_size: 10
   batch_interval: 1  # 秒
   
+  # 调试配置
+  debug_mode: true  # 调试模式，优先使用缓存数据
+  force_refresh: true  # 强制刷新，忽略缓存
+  cache_dir: "output/cache"  # 缓存目录
+  request_delay: 2.0  # 请求间隔时间（秒）
+  
   # 代理设置
-  proxy:
-    enabled: false
-    http_proxy: ""
-    https_proxy: ""
+  proxy: null
 
 # 平台配置
 platforms:
-  - id: "weibo_hot"
-    name: "微博热搜"
+  # 新的API接口平台
+  - id: "api_weibo"
+    name: "微博热搜(API)"
     type: "weibo"
-    url: "https://s.weibo.com/top/summary"
+    url: "https://newsnow.busiyi.world/api/s?id=weibo"
     headers:
-      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-      Referer: "https://weibo.com"
+      accept: "*/*"
+      accept-language: "zh-CN,zh;q=0.9"
+      priority: "u=1, i"
+      referer: "https://newsnow.busiyi.world/"
+      sec-ch-ua: '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"'
+      sec-ch-ua-mobile: "?0"
+      sec-ch-ua-platform: '"macOS"'
+      sec-fetch-dest: "empty"
+      sec-fetch-mode: "cors"
+      sec-fetch-site: "same-origin"
+      user-agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+      cookie: "_ga=GA1.1.1893853238.1760405052; _ga_EL9HHYE5LC=GS2.1.s1760419984$o3$g1$t1760419992$j52$l0$h0"
     enabled: true
     
-  - id: "zhihu_hot"
-    name: "知乎热榜"
+  - id: "api_zhihu"
+    name: "知乎热榜(API)"
     type: "zhihu"
-    url: "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total"
+    url: "https://newsnow.busiyi.world/api/s?id=zhihu"
     headers:
-      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      accept: "*/*"
+      accept-language: "zh-CN,zh;q=0.9"
+      priority: "u=1, i"
+      referer: "https://newsnow.busiyi.world/"
+      sec-ch-ua: '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"'
+      sec-ch-ua-mobile: "?0"
+      sec-ch-ua-platform: '"macOS"'
+      sec-fetch-dest: "empty"
+      sec-fetch-mode: "cors"
+      sec-fetch-site: "same-origin"
+      user-agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+      cookie: "_ga=GA1.1.1893853238.1760405052; _ga_EL9HHYE5LC=GS2.1.s1760419984$o3$g1$t1760419992$j52$l0$h0"
     enabled: true
     
-  - id: "github_trending"
-    name: "GitHub 趋势"
-    type: "github"
-    url: "https://api.github.com/search/repositories?q=stars:>1000&sort=stars&order=desc"
+  - id: "api_coolapk"
+    name: "酷安热榜(API)"
+    type: "news"
+    url: "https://newsnow.busiyi.world/api/s?id=coolapk"
     headers:
-      Accept: "application/vnd.github.v3+json"
-      User-Agent: "TrendRadar/1.0"
+      accept: "*/*"
+      accept-language: "zh-CN,zh;q=0.9"
+      priority: "u=1, i"
+      referer: "https://newsnow.busiyi.world/"
+      sec-ch-ua: '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"'
+      sec-ch-ua-mobile: "?0"
+      sec-ch-ua-platform: '"macOS"'
+      sec-fetch-dest: "empty"
+      sec-fetch-mode: "cors"
+      sec-fetch-site: "same-origin"
+      user-agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+      cookie: "_ga=GA1.1.1893853238.1760405052; _ga_EL9HHYE5LC=GS2.1.s1760419984$o3$g1$t1760419992$j52$l0$h0"
     enabled: true
 
 # 关键词配置

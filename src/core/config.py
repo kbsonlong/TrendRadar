@@ -92,6 +92,10 @@ class ConfigManager:
         """获取日志配置"""
         return self.get('LOGGING', {})
     
+    def get_crawler_config(self) -> Dict[str, Any]:
+        """获取爬虫配置"""
+        return self.get('crawler', {})
+    
     def get_html_report_config(self) -> Dict[str, Any]:
         """获取HTML报告配置"""
         return self.get('report.html', {})

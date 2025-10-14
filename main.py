@@ -101,6 +101,23 @@ class TrendRadar:
         """配置插件"""
         logger = logging.getLogger(__name__)
         
+        # 配置抓取器
+        crawler_config = self.config_manager.get_crawler_config()
+        if 'NewsFetcher' in self.fetcher_plugins:
+            news_fetcher_config = {
+                'debug_mode': crawler_config.get('debug_mode', False),
+                'force_refresh': crawler_config.get('force_refresh', False),
+                'cache_dir': crawler_config.get('cache_dir', 'output/cache'),
+                'request_delay': crawler_config.get('request_delay', 1.0),
+                'max_retries': crawler_config.get('max_retries', 3),
+                'timeout': crawler_config.get('timeout', 30)
+            }
+            success = self.fetcher_plugins['NewsFetcher'].configure(news_fetcher_config)
+            if success:
+                logger.info("NewsFetcher 配置成功")
+            else:
+                logger.warning("NewsFetcher 配置失败")
+        
         # 配置渲染器
         html_config = self.config_manager.get_html_report_config()
         if html_config.get('enabled'):
