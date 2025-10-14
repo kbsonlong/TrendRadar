@@ -52,12 +52,57 @@ class WordStat:
         if self.titles is None:
             self.titles = []
     
+    @property
+    def min_rank(self) -> Optional[int]:
+        """获取最低排名（最高排名）"""
+        if not self.titles:
+            return None
+        
+        all_ranks = []
+        for title in self.titles:
+            if title.ranks:
+                all_ranks.extend(title.ranks)
+        
+        return min(all_ranks) if all_ranks else None
+    
+    @property
+    def source_names(self) -> List[str]:
+        """获取来源平台名称列表"""
+        if not self.titles:
+            return []
+        
+        sources = set()
+        for title in self.titles:
+            if title.source_name:
+                sources.add(title.source_name)
+        
+        return sorted(list(sources))
+    
+    @property
+    def first_time(self) -> Optional[str]:
+        """获取首次出现时间"""
+        if not self.titles:
+            return None
+        
+        # 从标题数据中提取时间信息
+        times = []
+        for title in self.titles:
+            if hasattr(title, 'time_info') and title.time_info:
+                times.append(title.time_info)
+            elif hasattr(title, 'time_display') and title.time_display:
+                times.append(title.time_display)
+        
+        return min(times) if times else None
+    
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
         return {
             'word': self.word,
             'count': self.count,
-            'titles': [title.to_dict() for title in self.titles]
+            'titles': [title.to_dict() for title in self.titles],
+            'min_rank': self.min_rank,
+            'source_names': self.source_names,
+            'first_time': self.first_time
         }
 
 

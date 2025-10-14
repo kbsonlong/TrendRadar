@@ -103,11 +103,15 @@ class ConfigManager:
     
     def get_logging_config(self) -> Dict[str, Any]:
         """获取日志配置"""
-        return self.get('LOGGING', {})
+        return self.get('logging', {})
     
     def get_crawler_config(self) -> Dict[str, Any]:
         """获取爬虫配置"""
         return self.get('crawler', {})
+    
+    def get_newsnow_config(self) -> Dict[str, Any]:
+        """获取NewsNow API配置"""
+        return self.get('newsnow', {})
     
     def get_html_report_config(self) -> Dict[str, Any]:
         """获取HTML报告配置"""
@@ -128,4 +132,4 @@ class ConfigManager:
     
     def get_version(self) -> str:
         """获取版本号"""
-        return self.get('VERSION', '1.0.0')
+        return self.get('version', '1.0.0')

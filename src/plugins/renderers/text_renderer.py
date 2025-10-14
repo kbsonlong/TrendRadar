@@ -6,6 +6,13 @@ import logging
 from typing import Dict, Any, Optional
 from pathlib import Path
 
+try:
+    from jinja2 import Environment, FileSystemLoader, TemplateNotFound
+except ImportError:
+    Environment = None
+    FileSystemLoader = None
+    TemplateNotFound = None
+
 from .base_renderer import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -51,6 +58,10 @@ class TextRenderer(BaseRenderer):
         if not self.validate_config(config):
             return False
         
+        if Environment is None:
+            logger.error("Jinja2 未安装，请先安装: pip install jinja2")
+            return False
+        
         self.template_dir = config.get('template_dir')
         self.output_dir = config.get('output_dir', 'output/text')
         self.encoding = config.get('encoding', 'utf-8')
@@ -69,9 +80,25 @@ class TextRenderer(BaseRenderer):
         output_path = Path(self.output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
         
-        self._configured = True
-        logger.info(f"文本渲染器配置完成: {self.template_dir}")
-        return True
+        try:
+            # 初始化 Jinja2 环境
+            self.env = Environment(
+                loader=FileSystemLoader(self.template_dir),
+                autoescape=False,  # 文本不需要HTML转义
+                trim_blocks=True,
+                lstrip_blocks=True
+            )
+            
+            # 添加自定义过滤器
+            self._add_custom_filters()
+            
+            self._configured = True
+            logger.info(f"文本渲染器配置完成: {self.template_dir}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"文本渲染器配置失败: {str(e)}")
+            return False
     
     def render(
         self,
@@ -87,24 +114,23 @@ class TextRenderer(BaseRenderer):
         try:
             # 尝试不同的模板文件扩展名
             template_extensions = ['.md', '.txt', '.markdown']
-            template_path = None
-            template_content = None
+            template_file = None
             
             for ext in template_extensions:
-                candidate_path = Path(self.template_dir) / f"{template_name}{ext}"
-                if candidate_path.exists():
-                    template_path = candidate_path
+                candidate_file = f"{template_name}{ext}"
+                try:
+                    template = self.env.get_template(candidate_file)
+                    template_file = candidate_file
                     break
+                except TemplateNotFound:
+                    continue
             
-            if not template_path:
+            if not template_file:
                 logger.error(f"模板文件不存在，已尝试扩展名: {', '.join(template_extensions)}")
                 return ""
             
-            with open(template_path, 'r', encoding=self.encoding) as f:
-                template_content = f.read()
-            
-            # 简单的模板替换（支持 {{variable}} 语法）
-            rendered_content = self._simple_template_render(template_content, context)
+            # 渲染内容
+            rendered_content = template.render(**context)
             
             # 如果指定了输出路径，保存到文件
             if output_path:
@@ -118,6 +144,9 @@ class TextRenderer(BaseRenderer):
             
             return rendered_content
             
+        except TemplateNotFound:
+            logger.error(f"模板未找到: {template_name}")
+            return ""
         except Exception as e:
             logger.error(f"文本渲染失败: {str(e)}")
             return ""
@@ -133,25 +162,35 @@ class TextRenderer(BaseRenderer):
         
         template_extensions = ['.md', '.txt', '.markdown']
         for ext in template_extensions:
-            template_path = Path(self.template_dir) / f"{template_name}{ext}"
-            if template_path.exists():
+            try:
+                self.env.get_template(f"{template_name}{ext}")
                 return True
+            except TemplateNotFound:
+                continue
         
         return False
     
-    def _simple_template_render(self, template: str, context: Dict[str, Any]) -> str:
-        """简单的模板渲染（支持 {{variable}} 语法）"""
-        result = template
+    def _add_custom_filters(self):
+        """添加自定义过滤器"""
+        def format_time(value, format='%Y-%m-%d %H:%M:%S'):
+            """格式化时间"""
+            if hasattr(value, 'strftime'):
+                return value.strftime(format)
+            return str(value)
         
-        # 替换简单的变量
-        for key, value in context.items():
-            placeholder = f"{{{{{key}}}}}"
-            if isinstance(value, (str, int, float)):
-                result = result.replace(placeholder, str(value))
-            elif isinstance(value, (list, dict)):
-                # 对于复杂类型，转换为字符串表示
-                result = result.replace(placeholder, str(value))
-            else:
-                result = result.replace(placeholder, "")
+        def truncate_text(value, length=100, suffix='...'):
+            """截断文本"""
+            if len(value) <= length:
+                return value
+            return value[:length] + suffix
         
-        return result
+        def safe_url(value):
+            """安全的 URL"""
+            if not value or not value.startswith(('http://', 'https://')):
+                return '#'
+            return value
+        
+        # 注册过滤器
+        self.env.filters['format_time'] = format_time
+        self.env.filters['truncate_text'] = truncate_text
+        self.env.filters['safe_url'] = safe_url

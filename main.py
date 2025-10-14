@@ -20,7 +20,7 @@ from src.core.utils import (
     save_crawl_record, is_first_crawl_today
 )
 from src.plugins.plugin_loader import PluginLoader
-from src.plugins.fetchers.news_fetcher import NewsFetcher
+from src.plugins.fetchers.news_fetcher import NewsNowFetcher
 from src.plugins.notifiers.feishu_notifier import FeishuNotifier
 from src.plugins.notifiers.dingtalk_notifier import DingTalkNotifier
 from src.plugins.notifiers.wework_notifier import WeWorkNotifier
@@ -85,7 +85,7 @@ class TrendRadar:
     def _register_builtin_plugins(self):
         """注册内置插件"""
         # 注册抓取器插件
-        self.fetcher_plugins['NewsFetcher'] = NewsFetcher({})
+        self.fetcher_plugins['NewsNowFetcher'] = NewsNowFetcher({})
         
         # 注册通知器插件
         self.notifier_plugins['FeishuNotifier'] = FeishuNotifier({})
@@ -102,21 +102,20 @@ class TrendRadar:
         logger = logging.getLogger(__name__)
         
         # 配置抓取器
-        crawler_config = self.config_manager.get_crawler_config()
-        if 'NewsFetcher' in self.fetcher_plugins:
+        newsnow_config = self.config_manager.get_newsnow_config()
+        if 'NewsNowFetcher' in self.fetcher_plugins:
             news_fetcher_config = {
-                'debug_mode': crawler_config.get('debug_mode', False),
-                'force_refresh': crawler_config.get('force_refresh', False),
-                'cache_dir': crawler_config.get('cache_dir', 'output/cache'),
-                'request_delay': crawler_config.get('request_delay', 1.0),
-                'max_retries': crawler_config.get('max_retries', 3),
-                'timeout': crawler_config.get('timeout', 30)
+                'api_base_url': newsnow_config.get('api_base_url', 'https://newsnow.busiyi.world/api/s'),
+                'debug_mode': newsnow_config.get('debug_mode', False),
+                'force_refresh': newsnow_config.get('force_refresh', False),
+                'cache_dir': newsnow_config.get('cache_dir', 'cache/newsnow'),
+                'cache_expiry_hours': newsnow_config.get('cache_expiry_hours', 1)
             }
-            success = self.fetcher_plugins['NewsFetcher'].configure(news_fetcher_config)
+            success = self.fetcher_plugins['NewsNowFetcher'].configure(news_fetcher_config)
             if success:
-                logger.info("NewsFetcher 配置成功")
+                logger.info("NewsNowFetcher 配置成功")
             else:
-                logger.warning("NewsFetcher 配置失败")
+                logger.warning("NewsNowFetcher 配置失败")
         
         # 配置渲染器
         html_config = self.config_manager.get_html_report_config()
@@ -170,9 +169,14 @@ class TrendRadar:
                 if error_msg:
                     logger.error(f"抓取失败 {platform_config.name}: {error_msg}")
                 else:
-                    all_data.update(platform_data)
-                    logger.info(f"抓取成功 {platform_config.name}: {len(platform_data)} 条数据")
-                    
+                    # 确保数据结构正确 - 应该是嵌套字典格式
+                    if isinstance(platform_data, dict):
+                        # 如果数据已经是标准格式，直接使用
+                        all_data[platform_config.type] = platform_data
+                        logger.info(f"抓取成功 {platform_config.name}: {len(platform_data)} 条数据")
+                    else:
+                        logger.warning(f"抓取器返回的数据格式不正确: {platform_config.name}")
+                        
             except Exception as e:
                 logger.error(f"抓取异常 {platform_config.name}: {str(e)}")
         
@@ -188,7 +192,7 @@ class TrendRadar:
                     return fetcher
         
         # 默认使用新闻抓取器
-        return self.fetcher_plugins.get('NewsFetcher')
+        return self.fetcher_plugins.get('NewsNowFetcher')
     
     def analyze_data(self, crawl_data: Dict[str, Any]) -> ReportData:
         """分析数据"""

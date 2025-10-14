@@ -18,8 +18,8 @@
 {% if word_stats %}
 | 关键词 | 出现次数 | 最高排名 | 来源平台 | 首次出现 |
 |--------|----------|----------|----------|----------|
-{% for word, stat in word_stats %}
-| {{ word }} | {{ stat.count }} | {% if stat.min_rank %}#{{ stat.min_rank }}{% else %}-{% endif %} | {{ stat.source_names|join(", ") }} | {{ stat.first_time|format_time }} |
+{% for stat in word_stats %}
+| {{ stat.word }} | {{ stat.count }} | {% if stat.min_rank %}#{{ stat.min_rank }}{% else %}-{% endif %} | {{ stat.source_names|join(", ") }} | {{ stat.first_time|format_time }} |
 {% endfor %}
 {% else %}
 暂无关键词统计数据

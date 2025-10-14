@@ -313,9 +313,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for word, stat in word_stats %}
+                            {% for stat in word_stats %}
                             <tr>
-                                <td class="word-text">{{ word }}</td>
+                                <td class="word-text">{{ stat.word }}</td>
                                 <td class="word-count">{{ stat.count }}</td>
                                 <td class="word-rank">
                                     {% if stat.min_rank %}
