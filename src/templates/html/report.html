@@ -199,6 +199,54 @@
             color: #495057;
         }
         
+        .title-link {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        
+        .title-link:hover {
+            color: #5a6fd8;
+            text-decoration: underline;
+        }
+        
+        .title-link:visited {
+            color: #764ba2;
+        }
+        
+        .title-link-small {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 0.85rem;
+            margin-right: 8px;
+            padding: 2px 6px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .title-link-small:hover {
+            color: #5a6fd8;
+            background: rgba(102, 126, 234, 0.2);
+            text-decoration: none;
+        }
+        
+        .word-name {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 4px;
+        }
+        
+        .title-links {
+            margin-top: 4px;
+        }
+        
+        .more-titles {
+            color: #6c757d;
+            font-size: 0.8rem;
+            font-style: italic;
+        }
+        
         .title-source {
             color: #6c757d;
             font-size: 0.85rem;
@@ -315,7 +363,21 @@
                         <tbody>
                             {% for stat in word_stats %}
                             <tr>
-                                <td class="word-text">{{ stat.word }}</td>
+                                <td class="word-text">
+                                    <div class="word-name">{{ stat.word }}</div>
+                                    {% if stat.titles and stat.titles|length > 0 %}
+                                        <div class="title-links">
+                                            {% for title in stat.titles[:3] %}
+                                                {% if title.url %}
+                                                    <a href="{{ title.url }}" target="_blank" class="title-link-small">{{ title.title[:20] }}{% if title.title|length > 20 %}...{% endif %}</a>
+                                                {% endif %}
+                                            {% endfor %}
+                                            {% if stat.titles|length > 3 %}
+                                                <span class="more-titles">+{{ stat.titles|length - 3 }} 更多</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </td>
                                 <td class="word-count">{{ stat.count }}</td>
                                 <td class="word-rank">
                                     {% if stat.min_rank %}
@@ -344,7 +406,11 @@
                     <div class="new-title-item">
                         <div>
                             <span class="new-badge">NEW</span>
-                            <span class="title-text">{{ title.text }}</span>
+                            {% if title.url %}
+                                <a href="{{ title.url }}" target="_blank" class="title-link">{{ title.text }}</a>
+                            {% else %}
+                                <span class="title-text">{{ title.text }}</span>
+                            {% endif %}
                         </div>
                         <div>
                             <span class="title-source">{{ title.source_name }}</span>
