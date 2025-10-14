@@ -70,7 +70,20 @@ class ConfigManager:
     
     def get_word_groups(self) -> List[Dict[str, Any]]:
         """获取词组配置"""
-        return self.get('WORD_GROUPS', [])
+        keywords_config = self.get('keywords', {})
+        word_groups = keywords_config.get('word_groups', [])
+        
+        # 转换格式为预期的字典格式
+        formatted_groups = []
+        for group in word_groups:
+            if isinstance(group, list) and len(group) > 0:
+                formatted_groups.append({
+                    'word': group[0],
+                    'required_words': group[1:] if len(group) > 1 else [],
+                    'frequency_words': group[1:] if len(group) > 1 else []
+                })
+        
+        return formatted_groups
     
     def get_filter_words(self) -> List[str]:
         """获取过滤词配置"""
